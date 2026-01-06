@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block content %}
+{% load static %}
+
+<div id="cardtext" class="relative table_to_print my-6 p-6 bg-white rounded-lg shadow-md">
+
+
+  <div class="flex justify-between items-center mb-4">
+    <div class="to_hide text-3xl cursor-pointer py-2 w-8 transform hover:scale-110" id="cardtext">
+      <button onclick="window.history.back()">
+        <i class='bx bx-arrow-back'></i>
+      </button>
+    </div>
+    <div class="exam_id font-bold text-lg"> 
+      Exam ID: {{ assessment_exam_id }} 
+    </div>
+    <div style="display: flex;" class="screen-only">
+        <button  id="btns-questions" onclick="printQuestions()" 
+            class="text-white font-medium text-xs px-4 mt-2 py-2 buttons_for_ocr"
+            style="border-right: 1px solid #ccc; border-radius: 8px 0 0 8px;"
+        >Print Questions</button>
+        
+        <button id="btns-answerkey" onclick="printAnswerKey()"
+        class="text-white font-medium text-xs px-4 mt-2 py-2 buttons_for_ocr"
+        style="border-right: 1px solid #ccc; border-radius: 0;"
+        >Print Answer Key</button>
+    
+        
+        <button id="btns-export-pdf" onclick="exportToPdf()"
+        class="text-white font-medium text-xs px-4 mt-2 py-2 buttons_for_ocr"
+        style="border-right: 1px solid #ccc; border-radius: 0;"
+        >Export to PDF</button>
+
+        <form method="POST"
+        action="{% url 'export_answerkey' assessment_exam_id %}" 
+        style="margin: 0;"
+        >
+            {% csrf_token %}
+            <button type="submit" id="btns" 
+                class="text-white font-medium text-xs px-4 mt-2 py-2 buttons_for_ocr"
+                style="border-radius: 0 8px 8px 0;"
+            >Export Answer Key</button>
+        </form>
+      </div>
+
+
+  </div>
+
+  <div id="questions-section" class="screen-only question-content" {% if selected_view == 'answerkey' %}style="display:none;"{% endif %}>
+    {% if page_obj %}
+      {% for item in page_obj %}
+      <div class="mb-4">
+          <div class="text-sm">{{ item.number }}. {{ item.question }}</div>
+          <div class="grid grid-cols-2 gap-1 mt-2 text-xs">
+              <div>A. {{ item.a|capfirst }}</div>
+              <div>B. {{ item.b|capfirst }}</div>
+              <div>C. {{ item.c|capfirst }}</div>
+              <div>D. {{ item.d|capfirst }}</div>
+          </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>No items found.</p>
+    {% endif %}
+  </div>
+
+  <div id="answerkey-section" class="screen-only question-content" {% if selected_view != 'answerkey' %}style="display:none;"{% endif %}>
+    {% if page_obj %}
+      {% for item in page_obj %}
+      <div class="mb-4">
+          <div class="text-sm">{{ item.number }}. {{ item.correct_choice }} - {{ item.correct_answer }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>No items found.</p>
+    {% endif %}
+  </div>
+
+  <div id="print-questions-section" class="print-only question-content" {% if selected_view == 'answerkey' %}style="display:none;"{% endif %}>
+    {% if chunked_items %}
+      {% for page in chunked_items %}
+      <div class="print-page">
+        {% for item in page %}
+        <div class="mb-4">
+            <div class="text-sm">{{ item.number }}. {{ item.question }}</div>
+            <div class="grid grid-cols-2 gap-1 mt-2 text-xs">
+                <div>A. {{ item.a|capfirst }}</div>
+                <div>B. {{ item.b|capfirst }}</div>
+                <div>C. {{ item.c|capfirst }}</div>
+                <div>D. {{ item.d|capfirst }}</div>
+            </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>No items found.</p>
+    {% endif %}
+  </div>
+
+  <div id="print-answerkey-section" class="print-only question-content" {% if selected_view != 'answerkey' %}style="display:none;"{% endif %}>
+    {% if chunked_items %}
+      {% for page in chunked_items %}
+      <div class="print-page">
+        {% for item in page %}
+        <div class="mb-4">
+            <div class="text-sm">{{ item.number }}. {{ item.correct_choice }} - {{ item.correct_answer }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>No items found.</p>
+    {% endif %}
+  </div>
+
+</div>
+<style>
+  .print-only {
+    display: none;
+  }
+  .screen-only {
+    display: block;
+  }
+  .question-content {
+    margin-top: 1.5rem;
+  }
+  @media print {
+    * {
+      padding: 0;
+      margin: 0;
+      margin: 0;
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+  
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: transparent !important;
+      z-index: -100 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      height: auto !important;
+      width: 100vw !important;
+      font-size: 12px;
+      padding-bottom: 100px;
+    }
+  
+    .table_to_print {
+      padding-top: 100px;
+      font-family: "Times New Roman", Times, serif !important;
+      color: black !important;
+      z-index: 100 !important;
+      width: 100vw;
+      page-break-before: always;
+    }
+    .question-content {
+      margin-top: 40px;
+    }
+    .print-only {
+      display: block;
+    }
+    .screen-only {
+      display: none !important;
+    }
+    .pagination{
+      display: none !important;
+    }
+    .exam_id {
+      position: absolute;
+      top: 20;
+      right: 0;
+      padding-bottom: 20px;
+      margin-top: 20px;
+      padding-right: 10px;
+      font-family: "Times New Roman", Times, serif !important;
+      font-size: 12px;
+    }
+  
+    header, #to_hide, .to_hide {
+      display: none !important;
+    }
+  
+    .question {
+      page-break-inside: avoid;
+    }
+  
+    .table-container {
+      overflow: visible !important;
+      page-break-inside: avoid !important;
+    }
+    .print-page {
+      page-break-after: always;
+      break-after: page;
+      padding-top: 200px;
+    }
+    .print-page:first-child {
+      page-break-after: always;
+      break-after: page;
+      padding-top: 20px;
+    }
+    .print-page:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+
+    h1, h4 {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+  
+    .testpaper_header h1, .testpaper_header h4 {
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+    }
+    .first-page-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-image: url("{% static 'images/watermark.png' %}") !important;
+      background-size: cover !important;
+      background-position: top center !important;
+      background-repeat: no-repeat !important;
+      z-index: -1;
+    }
+
+  }
+  
+</style>
+<script>
+  var currentView = "{{ selected_view }}";
+
+  function setView(view) {
+    currentView = view;
+    var answerkeySection = document.getElementById('answerkey-section');
+    var questionsSection = document.getElementById('questions-section');
+    var printAnswerkeySection = document.getElementById('print-answerkey-section');
+    var printQuestionsSection = document.getElementById('print-questions-section');
+
+    if (view === 'answerkey') {
+      answerkeySection.style.display = 'block';
+      questionsSection.style.display = 'none';
+      printAnswerkeySection.style.display = 'block';
+      printQuestionsSection.style.display = 'none';
+    } else {
+      answerkeySection.style.display = 'none';
+      questionsSection.style.display = 'block';
+      printAnswerkeySection.style.display = 'none';
+      printQuestionsSection.style.display = 'block';
+    }
+  }
+
+  function printQuestions() {
+    setView('questions');
+    
+    window.print();
+  }
+
+  function printAnswerKey() {
+    setView('answerkey');
+    
+    window.print();
+  }
+
+  function exportToPdf() {
+    var url = new URL(window.location.href);
+    url.searchParams.set('export', 'pdf');
+    url.searchParams.set('view', currentView);
+    url.searchParams.delete('page');
+    window.location.href = url.toString();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    setView(currentView);
+    {% if auto_print %}
+    window.print();
+    {% endif %}
+  });
+</script>
+
+<div class="first-page-background"></div>
+
+{% endblock %}

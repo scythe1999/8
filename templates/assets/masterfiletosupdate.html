@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div  class="p-4 py-6">
+    <div class="flex justify-between items-center mb-4">
+        <div class="text-3xl cursor-pointer py-2 w-8 transform hover:scale-110" id="cardtext">
+          <button onclick="window.history.back()">
+            <i class='bx bx-arrow-back'></i>
+          </button>
+        </div>
+        <h1 class="text-center text-3xl font-semibold" id="cardtext">Update Table of Specification</h1>
+        <div class="w-8"></div>
+      </div>
+    <div id="cardtext" class="text-xs">
+        <form method="post" action="{% url 'submit_table_of_specification' group_id=group_id %}" class="space-y-6">
+            {% csrf_token %}
+           <h1 class="text-2xl font-bold text-start">{{ subject }}</h1>
+            <table class="min-w-full border-collapse border border-gray-500">
+                <thead class="bg-gray-700 text-white">
+                    <tr>
+                        <th class="border border-gray-500 px-4 py-2 text-center">TOPIC</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">PWD%</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Remembering</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Understanding</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Applying</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Analyzing</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Evaluating</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Creating</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">NID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for topic_id, topic_data in topic.items %}
+                    <tr class="text-center topic-row topic-summary-row bg-white" data-topic-id="{{ topic_id }}">
+                        <td class="w-1/4 border border-gray-500 px-4 py-2 text-left">{{ topic_data.topic_name }}</td>
+                
+                        <td class="border border-gray-500 px-4 py-2 text-center">
+                            <input type="number" id="pwd_total_{{ topic_id }}" name="pwd_total_{{ topic_id }}" 
+                                value="{{ topic_data.pwd_total|default:0 }}" class="bg-transparent text-center w-12" disabled />
+                        </td>
+                
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" id="remembering_total_{{ topic_id }}" name="remembering_total_{{ topic_id }}" 
+                                value="{{ topic_data.totals.remembering }}" class="bg-transparent text-center w-12" disabled />
+                        </td>
+                
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" id="understanding_total_{{ topic_id }}" name="understanding_total_{{ topic_id }}" 
+                                value="{{ topic_data.totals.understanding }}" class="bg-transparent text-center w-12" disabled />
+                        </td>
+                
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" id="applying_total_{{ topic_id }}" name="applying_total_{{ topic_id }}" 
+                                value="{{ topic_data.totals.applying }}" class="bg-transparent text-center w-12" disabled />
+                        </td>
+                
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" id="analyzing_total_{{ topic_id }}" name="analyzing_total_{{ topic_id }}" 
+                                value="{{ topic_data.totals.analyzing }}" class="bg-transparent text-center w-12" disabled />
+                        </td>
+                
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" id="evaluating_total_{{ topic_id }}" name="evaluating_total_{{ topic_id }}" 
+                                value="{{ topic_data.totals.evaluating }}" class="bg-transparent text-center w-12" disabled />
+                        </td>
+                
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" id="creating_total_{{ topic_id }}" name="creating_total_{{ topic_id }}" 
+                                value="{{ topic_data.totals.creating }}" class="bg-transparent text-center w-12" disabled />
+                        </td>
+                
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" id="total_topic_{{ topic_id }}" name="total_topic_{{ topic_id }}"  
+                                value="0" class="bg-transparent text-center w-12" disabled />
+                        </td>
+                    </tr>
+                {% endfor %}
+                
+
+                    <tr class="text-center bg-white">
+                        <td class="w-1/4 border border-gray-500 px-4 py-2 text-left">NUMBER OF ITEMS AND DISTRIBUTION</td>
+                        <td class="border border-gray-500 px-4 py-2 text-center">
+                            <div class="flex items-center justify-center">
+                                <input type="number" name="pwd_cat_update" value="0" class="bg-transparent text-center w-12" disabled />
+                                <span class="ml-1">%</span>
+                            </div>
+                        </td>
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" name="remembering_cat" value="0" class="bg-transparent text-center w-12 px-2" disabled />
+                        </td>
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" name="understanding_cat" value="0" class="bg-transparent text-center w-12 px-2" disabled />
+                        </td>
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" name="applying_cat" value="0" class="bg-transparent text-center w-12 px-2" disabled />
+                        </td>
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" name="analyzing_cat" value="0" class="bg-transparent text-center w-12 px-2" disabled />
+                        </td>
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" name="evaluating_cat" value="0" class="bg-transparent text-center w-12 px-2" disabled />
+                        </td>
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" name="creating_cat" value="0" class="bg-transparent text-center w-12 px-2" disabled />
+                        </td>
+                        <td class="border border-gray-500 px-4 py-2">
+                            <input type="number" name="totals_cat" value="0" class="bg-transparent text-center w-12 px-2" disabled />
+                        </td>
+                    </tr>
+                </tbody>
+            </table> 
+
+            {% for topic in topics %}
+            <table class="min-w-full border-collapse border border-gray-500 mt-4">
+                <thead class="bg-gray-700 text-white">
+                    <tr>
+                        <th class="border border-gray-500 px-4 py-2 text-center">{{ topic.topic_name }}</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">PWD</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Remembering</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Understanding</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Applying</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Analyzing</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Evaluating</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Creating</th>
+                        <th class="border border-gray-500 px-4 py-2 text-center">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subtopic in topic.subtopics.values %}
+                        <tr class="text-center bg-white" data-topic-id="{{ topic.topic_id }}" data-subtopic-id="{{ subtopic.subtopic_id }}">
+                            <td class="w-1/4 border border-gray-500 px-4 py-2 text-left">{{ subtopic.subtopic_name }}</td>
+                            <td class="border border-gray-500 px-4 py-2">
+                               <input type="number" step="any" id="pwd_{{ subtopic.subtopic_id }}" name="pwd_{{ subtopic.subtopic_id }}" value="{{ subtopic.pwd|default:0 }}" class="bg-transparent text-center w-20 rounded px-2" />
+                            </td>
+                            <td class="border border-gray-500 px-4 py-2">
+                                <input type="number" step="any" id="remembering_{{ subtopic.subtopic_id }}" name="remembering_{{ subtopic.subtopic_id }}" value="{{ subtopic.totals.remembering|default:0 }}" class="bg-transparent text-center w-12 rounded px-2" />
+                            </td>
+                            <td class="border border-gray-500 px-4 py-2">
+                                <input type="number" step="any" id="understanding_{{ subtopic.subtopic_id }}" name="understanding_{{ subtopic.subtopic_id }}" value="{{ subtopic.totals.understanding|default:0 }}" class="bg-transparent text-center w-12 rounded px-2" />
+                            </td>
+                            <td class="border border-gray-500 px-4 py-2">
+                                <input type="number" step="any" id="applying_{{ subtopic.subtopic_id }}" name="applying_{{ subtopic.subtopic_id }}" value="{{ subtopic.totals.applying|default:0 }}" class="bg-transparent text-center w-12 rounded px-2" />
+                            </td>
+                            <td class="border border-gray-500 px-4 py-2">
+                                <input type="number" step="any" id="analyzing_{{ subtopic.subtopic_id }}" name="analyzing_{{ subtopic.subtopic_id }}" value="{{ subtopic.totals.analyzing|default:0 }}" class="bg-transparent text-center w-12 rounded px-2" />
+                            </td>
+                            <td class="border border-gray-500 px-4 py-2">
+                                <input type="number" step="any" id="evaluating_{{ subtopic.subtopic_id }}" name="evaluating_{{ subtopic.subtopic_id }}" value="{{ subtopic.totals.evaluating|default:0 }}" class="bg-transparent text-center w-12 rounded px-2" />
+                            </td>
+                            <td class="border border-gray-500 px-4 py-2">
+                                <input type="number" step="any" id="creating_{{ subtopic.subtopic_id }}" name="creating_{{ subtopic.subtopic_id }}" value="{{ subtopic.totals.creating|default:0 }}" class="bg-transparent text-center w-12 rounded px-2" />
+                            </td>
+                            <td class="border border-gray-500 px-4 py-2">
+                                <input type="number" id="total_{{ subtopic.subtopic_id }}" name="total_{{ subtopic.subtopic_id }}" value="{{ subtopic.total_generated|default:0 }}" class="bg-transparent text-center w-12 rounded px-2" disabled />
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endfor %}
+            <div class="mt-auto flex my-4">
+                <span class="flex-1"></span>
+                <button id="btns" class="text-white font-medium text-xs px-4 mt-2 py-2 rounded-lg buttons_for_ocr" type="submit">
+                    Submit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const subtopicRows = document.querySelectorAll('tr[data-subtopic-id]');
+        const categories = ['remembering', 'understanding', 'applying', 'analyzing', 'evaluating', 'creating'];
+
+        const overallInputs = {
+            pwd: document.querySelector('input[name="pwd_cat_update"]'),
+            remembering: document.querySelector('input[name="remembering_cat"]'),
+            understanding: document.querySelector('input[name="understanding_cat"]'),
+            applying: document.querySelector('input[name="applying_cat"]'),
+            analyzing: document.querySelector('input[name="analyzing_cat"]'),
+            evaluating: document.querySelector('input[name="evaluating_cat"]'),
+            creating: document.querySelector('input[name="creating_cat"]'),
+            total: document.querySelector('input[name="totals_cat"]'),
+        };
+
+        function getNumericValue(element) {
+            return element ? parseFloat(element.value) || 0 : 0;
+        }
+
+        function formatNumber(value) {
+            if (!Number.isFinite(value)) {
+                return 0;
+            }
+            return Number.isInteger(value) ? value : value.toFixed(2);
+        }
+
+        function updateSubtopicRow(row) {
+            const subtopicId = row.dataset.subtopicId;
+            if (!subtopicId) {
+                return;
+            }
+
+            let total = 0;
+            categories.forEach(category => {
+                const input = row.querySelector(`[name="${category}_${subtopicId}"]`);
+                total += getNumericValue(input);
+            });
+
+            const totalInput = row.querySelector(`[name="total_${subtopicId}"]`);
+            if (totalInput) {
+                totalInput.value = formatNumber(total);
+            }
+        }
+
+        function updateTopicSummary(topicId) {
+            if (!topicId) {
+                return;
+            }
+
+            const summaryRow = document.querySelector(`.topic-summary-row[data-topic-id="${topicId}"]`);
+            if (!summaryRow) {
+                return;
+            }
+
+            const totals = { pwd: 0 };
+            categories.forEach(category => {
+                totals[category] = 0;
+            });
+
+            const topicRows = document.querySelectorAll(`tr[data-topic-id="${topicId}"][data-subtopic-id]`);
+            topicRows.forEach(row => {
+                const subtopicId = row.dataset.subtopicId;
+                totals.pwd += getNumericValue(row.querySelector(`[name="pwd_${subtopicId}"]`));
+
+                categories.forEach(category => {
+                    totals[category] += getNumericValue(row.querySelector(`[name="${category}_${subtopicId}"]`));
+                });
+            });
+
+            const pwdInput = summaryRow.querySelector(`#pwd_total_${topicId}`);
+            if (pwdInput) {
+                pwdInput.value = formatNumber(totals.pwd);
+            }
+
+            categories.forEach(category => {
+                const input = summaryRow.querySelector(`#${category}_total_${topicId}`);
+                if (input) {
+                    input.value = formatNumber(totals[category]);
+                }
+            });
+
+            const totalInput = summaryRow.querySelector(`#total_topic_${topicId}`);
+            if (totalInput) {
+                const total = categories.reduce((sum, category) => sum + totals[category], 0);
+                totalInput.value = formatNumber(total);
+            }
+        }
+
+        function updateOverallTotals() {
+            const summaryRows = document.querySelectorAll('.topic-summary-row[data-topic-id]');
+            const totals = { pwd: 0 };
+
+            categories.forEach(category => {
+                totals[category] = 0;
+            });
+
+            summaryRows.forEach(row => {
+                const topicId = row.dataset.topicId;
+                if (!topicId) {
+                    return;
+                }
+
+                totals.pwd += getNumericValue(row.querySelector(`#pwd_total_${topicId}`));
+
+                categories.forEach(category => {
+                    totals[category] += getNumericValue(row.querySelector(`#${category}_total_${topicId}`));
+                });
+            });
+
+            if (overallInputs.pwd) {
+                overallInputs.pwd.value = formatNumber(totals.pwd);
+            }
+
+            categories.forEach(category => {
+                if (overallInputs[category]) {
+                    overallInputs[category].value = formatNumber(totals[category]);
+                }
+            });
+
+            if (overallInputs.total) {
+                const total = categories.reduce((sum, category) => sum + totals[category], 0);
+                overallInputs.total.value = formatNumber(total);
+            }
+        }
+
+        subtopicRows.forEach(row => {
+            const inputs = row.querySelectorAll('input[type="number"]:not([disabled])');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    updateSubtopicRow(row);
+                    updateTopicSummary(row.dataset.topicId);
+                    updateOverallTotals();
+                });
+            });
+        });
+
+        const topicIds = new Set();
+        subtopicRows.forEach(row => {
+            updateSubtopicRow(row);
+            if (row.dataset.topicId) {
+                topicIds.add(row.dataset.topicId);
+            }
+        });
+
+        topicIds.forEach(topicId => updateTopicSummary(topicId));
+        updateOverallTotals();
+    });
+</script>
+    
+{% endblock %}

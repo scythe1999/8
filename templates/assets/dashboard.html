@@ -1,0 +1,1624 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div>
+<link type="text/css" rel="stylesheet" href="{% static 'css/main.css' %}">
+
+<!-- HERO SECTION -->
+<section>
+  <div class="mx-auto max-w-8xl px-4 pt-8 sm:px-10 lg:px-8">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between text-gray-500">
+      <div class="max-w-3xl">
+        <div class="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-1.5 text-xs font-bold tracking-wide text-indigo-700 shadow-sm">
+          <i class='bx bx-bar-chart-alt-2'></i>
+          <span>ANALYTICS DASHBOARD</span>
+        </div>
+        <h1 class="mt-4 text-4xl font-black leading-tight sm:text-5xl text-slate-900 text-gray-700">Academic Performance Insights</h1>
+        <p class="mt-3 text-base text-slate-600 text-gray-500">Real-time analytics tracking student mastery, assessment trends, and learning outcomes across all subjects.</p>
+        
+        <div class="mt-5 inline-flex items-center gap-3 rounded-xl bg-white px-5 py-3 text-sm font-semibold border-2 border-indigo-100 shadow-lg">
+          <i class='bx bx-calendar-check text-xl text-indigo-600'></i>
+          <span class="text-slate-700">{{ active_year_label }}</span>
+        </div>
+      </div>
+
+      <!-- Compact metrics grid -->
+      <div class="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-4 shadow-md text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider opacity-90">Students</p>
+              <p class="mt-2 text-4xl font-extrabold">{{ enrolled_students_count }}</p>
+            </div>
+            <i class='bx bxs-group text-3xl opacity-30'></i>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-4 shadow-md text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider opacity-90">Assessments</p>
+              <p class="mt-2 text-4xl font-extrabold">{{ assessment_summaries|length }}</p>
+            </div>
+            <i class='bx bxs-file-doc text-3xl opacity-30'></i>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-4 shadow-md text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider opacity-90">Avg Mastery</p>
+              <p class="mt-2 text-4xl font-extrabold">{{ overall_percentages.average|floatformat:1 }}%</p>
+            </div>
+            <i class='bx bxs-trophy text-3xl opacity-30'></i>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-4 shadow-md text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider opacity-90">Question Bank</p>
+              <p class="mt-2 text-4xl font-extrabold">{{ question_status_summary.active }}</p>
+            </div>
+            <i class='bx bxs-message-square-check text-3xl opacity-30'></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN ANALYTICS SECTION -->
+<section class="bg-slate-50 py-10">
+  <div class="mx-auto max-w-8xl px-4 sm:px-10 lg:px-8">
+    
+    <!-- Primary Charts Row -->
+    <div class="grid gap-6 lg:grid-cols-2 mb-6">
+      
+      <!-- Bloom's Taxonomy Performance -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 text-gray-700">Bloom's Taxonomy Mastery</h3>
+            <p class="mt-1 text-sm text-slate-600 text-gray-500">Cognitive skill levels across all assessments</p>
+          </div>
+          <select id="assessmentDropdown" class="rounded-lg border-2 border-slate-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-slate-700 shadow-sm hover:border-indigo-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all text-gray-700">
+            <option value="overall"
+                    data-remembering="{{ overall_percentages.remembering }}"
+                    data-creating="{{ overall_percentages.creating }}"
+                    data-understanding="{{ overall_percentages.understanding }}"
+                    data-applying="{{ overall_percentages.applying }}"
+                    data-analyzing="{{ overall_percentages.analyzing }}"
+                    data-evaluating="{{ overall_percentages.evaluating }}"
+                    data-average="{{ overall_percentages.average }}">
+              📊 Overall Mastery
+            </option>
+            {% for record in assessment_summaries %}
+            <option value="{{ record.id }}"
+                    data-remembering="{{ record.remembering }}"
+                    data-creating="{{ record.creating }}"
+                    data-understanding="{{ record.understanding }}"
+                    data-applying="{{ record.applying }}"
+                    data-analyzing="{{ record.analyzing }}"
+                    data-evaluating="{{ record.evaluating }}"
+                    data-average="{{ record.average }}">
+              {{ record.label }}{% if record.subject_code %} • {{ record.subject_code }}{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div id="bar-chart" class="h-[380px] w-full"></div>
+      </div>
+
+      <!-- Question Difficulty Distribution -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 text-gray-700">Question Difficulty Distribution</h3>
+            <p class="mt-1 text-sm text-slate-600 text-gray-500">Distribution of questions by difficulty level</p>
+          </div>
+        </div>
+        <div class="flex items-center justify-center h-[340px]">
+          <div class="w-full max-w-sm h-full">
+            <canvas id="difficultyChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question Performance Analytics -->
+    <div class="grid gap-6 lg:grid-cols-2 mb-6">
+      
+      <!-- Hardest Questions -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Most Challenging Questions</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Questions with lowest correct answer rates</p>
+        </div>
+        <div class="space-y-3 max-h-[400px] overflow-y-auto">
+          {% for q in hardest_questions %}
+          <div class="rounded-lg border-2 border-red-100 bg-red-50 p-4">
+            <div class="flex items-start justify-between mb-2">
+              <span class="text-xs font-bold text-red-700 bg-red-200 px-2 py-1 rounded">#{{ q.number }}</span>
+              <span class="text-sm font-bold text-red-700">{{ q.difficulty|floatformat:1 }}%</span>
+            </div>
+            <p class="text-sm text-gray-700 mb-2">{{ q.question }}</p>
+            <div class="flex gap-3 text-xs">
+              <span class="text-green-700">✓ {{ q.correct }}</span>
+              <span class="text-red-700">✗ {{ q.wrong }}</span>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-center text-sm text-slate-500 py-8">No data available</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Easiest Questions -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Easiest Questions</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Questions with highest correct answer rates</p>
+        </div>
+        <div class="space-y-3 max-h-[400px] overflow-y-auto">
+          {% for q in easiest_questions %}
+          <div class="rounded-lg border-2 border-green-100 bg-green-50 p-4">
+            <div class="flex items-start justify-between mb-2">
+              <span class="text-xs font-bold text-green-700 bg-green-200 px-2 py-1 rounded">#{{ q.number }}</span>
+              <span class="text-sm font-bold text-green-700">{{ q.difficulty|floatformat:1 }}%</span>
+            </div>
+            <p class="text-sm text-gray-700 mb-2">{{ q.question }}</p>
+            <div class="flex gap-3 text-xs">
+              <span class="text-green-700">✓ {{ q.correct }}</span>
+              <span class="text-red-700">✗ {{ q.wrong }}</span>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-center text-sm text-slate-500 py-8">No data available</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Assessment Analytics Row -->
+    <div class="grid gap-6 lg:grid-cols-3 mb-6">
+      
+      <!-- Pass/Fail Rate -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Pass/Fail Rate</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Performance distribution per assessment</p>
+        </div>
+        <div id="pass-fail-chart" class="h-[280px] w-full"></div>
+      </div>
+
+      <!-- Assessment Completion -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Assessment Completion</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Student participation rates</p>
+        </div>
+        <div id="completion-chart" class="h-[280px] w-full"></div>
+      </div>
+
+      <!-- Subject Performance Chart -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Subject Performance</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Comparative mastery by subject area</p>
+        </div>
+        <div id="subject-chart" class="h-[280px] w-full"></div>
+      </div>
+    </div>
+
+    <!-- Question Bank Status -->
+    <div class="grid gap-6 lg:grid-cols-2 mb-6">
+      
+      <!-- Subject Question Bank Status -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Question Bank by Subject</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Active vs restricted questions per subject</p>
+        </div>
+        <div id="question-bank-chart" class="h-[300px] w-full"></div>
+      </div>
+
+      <!-- Restricted Questions -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 text-gray-700">Question Review Status</h3>
+            <p class="mt-1 text-sm text-slate-600 text-gray-500">Distribution of restricted items by Bloom level</p>
+          </div>
+          <div class="text-sm font-bold text-amber-700 bg-amber-50 px-4 py-2 rounded-lg border-2 border-amber-200 text-gray-700">
+            {{ restricted_counts }} Pending
+          </div>
+        </div>
+        <div class="flex items-center justify-center h-[260px]">
+          <div class="w-full max-w-sm h-full">
+            <canvas id="chartDoughnut"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Tables Row -->
+    <div class="grid gap-6 lg:grid-cols-3">
+      
+      <!-- Top Performing Assessments -->
+      <div class="lg:col-span-2 rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 text-gray-700">Top Performing Assessments</h3>
+            <p class="mt-1 text-sm text-slate-600 text-gray-500">Highest mastery scores across all subjects</p>
+          </div>
+          <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 border-2 border-emerald-200 text-gray-700">
+            <i class='bx bxs-star'></i>
+            {{ assessment_highlights|length }} Highlighted
+          </span>
+        </div>
+        
+        <div class="overflow-hidden rounded-xl border-2 border-slate-100">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-gradient-to-r from-slate-50 to-slate-100 text-xs uppercase tracking-wider text-slate-700 font-bold text-gray-700">
+              <tr>
+                <th class="px-5 py-4">Assessment</th>
+                <th class="px-5 py-4">Subject</th>
+                <th class="px-5 py-4 text-center">Questions</th>
+                <th class="px-5 py-4 text-right">Mastery Score</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-gray-500">
+              {% if assessment_highlights %}
+                {% for record in assessment_highlights %}
+                <tr class="hover:bg-indigo-50/50 transition-colors">
+                  <td class="px-5 py-4 font-semibold text-slate-800">{{ record.label }}</td>
+                  <td class="px-5 py-4 text-slate-600 text-gray-500">{{ record.subject_code|default:'—' }}</td>
+                  <td class="px-5 py-4 text-center text-slate-600">{{ record.total_questions|default:'—' }}</td>
+                  <td class="px-5 py-4 text-right">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-700">
+                      <i class='bx bxs-badge-check'></i>
+                      {{ record.average|floatformat:1 }}%
+                    </span>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500">
+                    <i class='bx bx-info-circle text-3xl mb-2'></i>
+                    <p>No assessment highlights available</p>
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quick Stats Panel -->
+      <div class="space-y-6">
+        <!-- Mastery Gauge -->
+        <div class="rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 shadow-lg text-white">
+          <h3 class="text-lg font-bold opacity-90">Overall Mastery</h3>
+          <div class="mt-4 flex items-center justify-center">
+            <div class="relative">
+              <svg class="w-32 h-32 transform -rotate-90">
+                <circle cx="64" cy="64" r="56" stroke="rgba(255,255,255,0.2)" stroke-width="8" fill="none"/>
+                <circle cx="64" cy="64" r="56" stroke="white" stroke-width="8" fill="none"
+                        stroke-dasharray="351.86"
+                        stroke-linecap="round"
+                        style="stroke-dashoffset: calc(351.86 - (351.86 * {{ overall_percentages.average|floatformat:0 }}) / 100)"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-3xl font-black">{{ overall_percentages.average|floatformat:0 }}%</span>
+              </div>
+            </div>
+          </div>
+          <p class="mt-3 text-center text-sm opacity-90">Across all Bloom levels</p>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200 text-gray-700">
+          <h3 class="text-lg font-bold text-slate-900 mb-4">Question Bank Status</h3>
+          <dl class="space-y-3">
+            <div class="flex items-center justify-between rounded-lg bg-blue-50 p-3 border-2 border-blue-100">
+              <dt class="text-sm font-semibold text-slate-700">Total Questions</dt>
+              <dd class="text-lg font-bold text-blue-700">{{ total }}</dd>
+            </div>
+            <div class="flex items-center justify-between rounded-lg bg-green-50 p-3 border-2 border-green-100">
+              <dt class="text-sm font-semibold text-slate-700">Active</dt>
+              <dd class="text-lg font-bold text-green-700">{{ question_status_summary.active }}</dd>
+            </div>
+            <div class="flex items-center justify-between rounded-lg bg-amber-50 p-3 border-2 border-amber-100">
+              <dt class="text-sm font-semibold text-slate-700">Restricted</dt>
+              <dd class="text-lg font-bold text-amber-700">{{ restricted_counts }}</dd>
+            </div>
+            <div class="flex items-center justify-between rounded-lg bg-purple-50 p-3 border-2 border-purple-100">
+              <dt class="text-sm font-semibold text-slate-700">Restriction Rate</dt>
+              <dd class="text-lg font-bold text-purple-700">{{ restricted_percentage|floatformat:1 }}%</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+{{ bloom_labels|json_script:"bloom-labels" }}
+{{ bloom_data|json_script:"bloom-data" }}
+{{ subject_codes|json_script:"subject-codes" }}
+{{ subject_percentages|json_script:"subject-percentages" }}
+
+
+<script>
+// ============================================
+// DATA PREPARATION
+// ============================================
+
+// Backend data - Bloom's Taxonomy
+const bloomLabels = {{ bloom_labels|safe }};
+const bloomData = {{ bloom_data|safe }};
+const subjectCodes = {{ subject_codes|safe }};
+const subjectPercentages = {{ subject_percentages|safe }};
+
+console.log('=== DEBUG INFO ===');
+console.log('Bloom Labels:', bloomLabels);
+console.log('Bloom Data:', bloomData);
+console.log('Subject Codes:', subjectCodes);
+console.log('Subject Percentages:', subjectPercentages);
+
+// Difficulty Distribution Data
+const difficultyData = [
+  {{ difficulty_distribution.very_easy|default:0 }},
+  {{ difficulty_distribution.easy|default:0 }},
+  {{ difficulty_distribution.moderate|default:0 }},
+  {{ difficulty_distribution.difficult|default:0 }},
+  {{ difficulty_distribution.very_difficult|default:0 }}
+];
+
+console.log('Difficulty Data:', difficultyData);
+
+// Pass/Fail Data
+const passFailData = [
+  {% for item in pass_fail_data %}
+  {
+    topic: '{{ item.topic|slice:":20"|escapejs }}',
+    passed: {{ item.passed|default:0 }},
+    failed: {{ item.failed|default:0 }},
+    rate: {{ item.pass_rate|default:0 }}
+  },
+  {% endfor %}
+];
+
+console.log('Pass/Fail Data:', passFailData);
+
+// Completion Data
+const completionData = [
+  {% for item in assessment_completion %}
+  {
+    topic: '{{ item.topic|slice:":20"|escapejs }}',
+    rate: {{ item.completion_rate|default:0 }}
+  },
+  {% endfor %}
+];
+
+console.log('Completion Data:', completionData);
+
+// Question Bank Data
+const questionBankData = {
+  subjects: [
+    {% for item in subject_question_bank|slice:":8" %}
+    '{{ item.subject_code|escapejs }}',
+    {% endfor %}
+  ],
+  active: [
+    {% for item in subject_question_bank|slice:":8" %}
+    {{ item.active|default:0 }},
+    {% endfor %}
+  ],
+  restricted: [
+    {% for item in subject_question_bank|slice:":8" %}
+    {{ item.restricted|default:0 }},
+    {% endfor %}
+  ]
+};
+
+console.log('Question Bank Data:', questionBankData);
+
+// Assessment dropdown data
+const assessmentData = {
+  {% for record in assessment_summaries %}
+  '{{ record.id }}': {
+    remembering: {{ record.remembering|default:0 }},
+    creating: {{ record.creating|default:0 }},
+    understanding: {{ record.understanding|default:0 }},
+    applying: {{ record.applying|default:0 }},
+    analyzing: {{ record.analyzing|default:0 }},
+    evaluating: {{ record.evaluating|default:0 }},
+    average: {{ record.average|default:0 }}
+  },
+  {% endfor %}
+  'overall': {
+    remembering: {{ overall_percentages.remembering|default:0 }},
+    creating: {{ overall_percentages.creating|default:0 }},
+    understanding: {{ overall_percentages.understanding|default:0 }},
+    applying: {{ overall_percentages.applying|default:0 }},
+    analyzing: {{ overall_percentages.analyzing|default:0 }},
+    evaluating: {{ overall_percentages.evaluating|default:0 }},
+    average: {{ overall_percentages.average|default:0 }}
+  }
+};
+
+console.log('Assessment Data:', assessmentData);
+
+// ============================================
+// CHART.JS CHARTS
+// ============================================
+
+// Difficulty Distribution Chart (Doughnut)
+document.addEventListener('DOMContentLoaded', function() {
+  const diffCanvas = document.getElementById('difficultyChart');
+  
+  if (diffCanvas && difficultyData && difficultyData.some(d => d > 0)) {
+    console.log('Creating Difficulty Chart...');
+    
+    const ctx = diffCanvas.getContext('2d');
+    const diffChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Very Easy (90-100%)', 'Easy (75-89%)', 'Moderate (50-74%)', 'Difficult (25-49%)', 'Very Difficult (0-24%)'],
+        datasets: [{
+          label: 'Questions',
+          data: difficultyData,
+          backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#7f1d1d'],
+          borderWidth: 3,
+          borderColor: '#fff',
+          hoverOffset: 8,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#0f172a',
+              font: { size: 11, weight: '600' },
+              padding: 12
+            }
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            padding: 12,
+          }
+        }
+      }
+    });
+    
+    console.log('Difficulty Chart created successfully');
+  } else {
+    console.log('Difficulty Chart skipped - no data or canvas not found');
+  }
+  
+  // Restricted Questions Doughnut Chart
+  const doughnutCanvas = document.getElementById('chartDoughnut');
+  
+  if (doughnutCanvas && bloomData && bloomData.some(d => d > 0)) {
+    console.log('Creating Doughnut Chart...');
+    
+    const ctx = doughnutCanvas.getContext('2d');
+    const doughnutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: bloomLabels,
+        datasets: [{
+          label: 'Restricted Questions',
+          data: bloomData,
+          backgroundColor: ['#4f46e5', '#7c3aed', '#2563eb', '#06b6d4', '#10b981', '#f59e0b'],
+          borderWidth: 3,
+          borderColor: '#fff',
+          hoverOffset: 8,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#0f172a',
+              font: { size: 11, weight: '600' },
+              padding: 12
+            }
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            padding: 12,
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                return `${label}: ${value} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    console.log('Doughnut Chart created successfully');
+  } else {
+    console.log('Doughnut Chart skipped - no data or canvas not found');
+  }
+});
+
+// ============================================
+// APEXCHARTS
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+  let bloomChartInstance = null;
+  let passFailChartInstance = null;
+  let completionChartInstance = null;
+  let subjectChartInstance = null;
+  let questionBankChartInstance = null;
+
+  // ============================================
+  // BLOOM'S TAXONOMY BAR CHART
+  // ============================================
+  
+  function createBloomChart(assessmentId) {
+    console.log('Creating Bloom Chart for assessment:', assessmentId);
+    
+    const data = assessmentData[assessmentId];
+    if (!data) {
+      console.error('No data found for assessment:', assessmentId);
+      return;
+    }
+    
+    const dataPoints = [
+      data.remembering,
+      data.creating,
+      data.understanding,
+      data.applying,
+      data.analyzing,
+      data.evaluating,
+      data.average
+    ];
+    
+    console.log('Bloom Chart Data Points:', dataPoints);
+    
+    const chartConfig = {
+      series: [{
+        name: 'Mastery %',
+        data: dataPoints
+      }],
+      chart: {
+        type: 'bar',
+        height: 380,
+        toolbar: { show: false },
+        animations: { enabled: true, speed: 800 }
+      },
+      dataLabels: { enabled: false },
+      colors: ['#4f46e5'],
+      plotOptions: {
+        bar: {
+          columnWidth: '50%',
+          borderRadius: 8,
+          dataLabels: { position: 'top' }
+        }
+      },
+      xaxis: {
+        categories: ['Remember', 'Create', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Average'],
+        labels: {
+          style: { colors: '#0f172a', fontSize: '12px', fontWeight: 600 },
+          rotate: -45,
+        },
+      },
+      yaxis: {
+        labels: {
+          style: { colors: '#0f172a', fontSize: '12px', fontWeight: 600 },
+          formatter: (val) => val ? val.toFixed(0) + '%' : '0%'
+        },
+        max: 100
+      },
+      grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+      tooltip: {
+        theme: 'dark',
+        y: { formatter: (val) => val ? val.toFixed(2) + '%' : '0%' }
+      }
+    };
+    
+    const chartElement = document.querySelector('#bar-chart');
+    if (chartElement) {
+      if (bloomChartInstance) {
+        bloomChartInstance.updateSeries([{ name: 'Mastery %', data: dataPoints }]);
+      } else {
+        bloomChartInstance = new ApexCharts(chartElement, chartConfig);
+        bloomChartInstance.render();
+        console.log('Bloom Chart rendered');
+      }
+    } else {
+      console.error('Bloom chart element not found');
+    }
+  }
+  
+  // Initialize Bloom Chart
+  const dropdown = document.getElementById('assessmentDropdown');
+  if (dropdown) {
+    dropdown.addEventListener('change', function() {
+      createBloomChart(this.value);
+    });
+    createBloomChart(dropdown.value);
+  }
+
+  // ============================================
+  // PASS/FAIL CHART
+  // ============================================
+  
+  if (passFailData && passFailData.length > 0) {
+    console.log('Creating Pass/Fail Chart...');
+    
+    const passFailConfig = {
+      series: [
+        { name: 'Passed', data: passFailData.map(d => d.passed) },
+        { name: 'Failed', data: passFailData.map(d => d.failed) }
+      ],
+      chart: {
+        type: 'bar',
+        height: 280,
+        stacked: true,
+        toolbar: { show: false },
+        // Use ApexCharts states to darken bars on hover
+        states: {
+          hover: {
+            filter: {
+              type: 'darken',
+              value: 0.25
+            }
+          }
+        }
+      },
+      colors: ['#10b981', '#ef4444'],
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          borderRadius: 6
+        }
+      },
+      fill: {
+        opacity: 1
+      },
+      xaxis: {
+        categories: passFailData.map(d => d.topic),
+        labels: { style: { fontSize: '11px' } }
+      },
+      legend: { position: 'top' },
+      dataLabels: { enabled: false },
+      tooltip: {
+        // Dark tooltip theme for a darker hover appearance
+        theme: 'dark',
+        y: {
+          formatter: function(val) {
+            return val + ' students';
+          }
+        }
+      }
+    };
+    
+    const passFailElement = document.querySelector('#pass-fail-chart');
+    if (passFailElement) {
+      passFailChartInstance = new ApexCharts(passFailElement, passFailConfig);
+      passFailChartInstance.render();
+      console.log('Pass/Fail Chart rendered');
+    }
+  } else {
+    console.log('Pass/Fail Chart skipped - no data');
+  }
+
+  // ============================================
+  // COMPLETION CHART
+  // ============================================
+  
+  if (completionData && completionData.length > 0) {
+    console.log('Creating Completion Chart...');
+    
+    const completionConfig = {
+      series: [{ name: 'Completion %', data: completionData.map(d => d.rate) }],
+      chart: {
+        type: 'bar',
+        height: 280,
+        toolbar: { show: false },
+        // darken bars on hover
+        states: {
+          hover: {
+            filter: {
+              type: 'darken',
+              value: 0.35
+            }
+          }
+        }
+      },
+      colors: ['#3b82f6'],
+      plotOptions: {
+        bar: {
+          borderRadius: 8,
+          distributed: true
+        }
+      },
+      xaxis: {
+        categories: completionData.map(d => d.topic),
+        labels: { style: { fontSize: '11px' } }
+      },
+      yaxis: {
+        max: 100,
+        labels: { formatter: (val) => val ? val.toFixed(0) + '%' : '0%' }
+      },
+      legend: { show: false },
+      dataLabels: { enabled: false },
+      tooltip: {
+        // use dark tooltip theme
+        theme: 'dark',
+        y: { formatter: (val) => val ? val.toFixed(1) + '%' : '0%' }
+      }
+    };
+    
+    const completionElement = document.querySelector('#completion-chart');
+    if (completionElement) {
+      completionChartInstance = new ApexCharts(completionElement, completionConfig);
+      completionChartInstance.render();
+      console.log('Completion Chart rendered');
+    }
+  } else {
+    console.log('Completion Chart skipped - no data');
+  }
+
+  // ============================================
+  // SUBJECT PERFORMANCE CHART
+  // ============================================
+  
+  if (subjectCodes && subjectCodes.length > 0) {
+    console.log('Creating Subject Chart...');
+    
+    const subjectChartConfig = {
+      series: [{ name: 'Correct Answer Rate', data: subjectPercentages.slice(0, 8) }],
+      chart: {
+        type: 'bar',
+        height: 280,
+        toolbar: { show: false }
+      },
+      plotOptions: {
+        bar: {
+          borderRadius: 6,
+          horizontal: true,
+          distributed: true
+        }
+      },
+      colors: ['#4f46e5', '#7c3aed', '#2563eb', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'],
+      dataLabels: {
+        enabled: true,
+        formatter: (val) => val ? val.toFixed(1) + '%' : '0%',
+        offsetX: 30,
+        style: { fontSize: '11px', fontWeight: 'bold', colors: ['#fff'] }
+      },
+      xaxis: {
+        categories: subjectCodes.slice(0, 8),
+        max: 100,
+        labels: {
+          formatter: (val) => val ? val.toFixed(0) + '%' : '0%',
+          style: { fontSize: '11px' }
+        }
+      },
+      yaxis: {
+        labels: { style: { fontSize: '11px', fontWeight: 600 } }
+      },
+      legend: { show: false },
+      tooltip: {
+        y: { formatter: (val) => val ? val.toFixed(2) + '%' : '0%' }
+      }
+    };
+    
+    const subjectElement = document.querySelector('#subject-chart');
+    if (subjectElement) {
+      subjectChartInstance = new ApexCharts(subjectElement, subjectChartConfig);
+      subjectChartInstance.render();
+      console.log('Subject Chart rendered');
+    }
+  } else {
+    console.log('Subject Chart skipped - no data');
+  }
+
+  // ============================================
+  // QUESTION BANK CHART
+  // ============================================
+  
+  if (questionBankData.subjects && questionBankData.subjects.length > 0) {
+    console.log('Creating Question Bank Chart...');
+    
+    const questionBankConfig = {
+      series: [
+        { name: 'Active', data: questionBankData.active },
+        { name: 'Restricted', data: questionBankData.restricted }
+      ],
+      chart: {
+        type: 'bar',
+        height: 300,
+        stacked: true,
+        toolbar: { show: false }
+      },
+      colors: ['#10b981', '#f59e0b'],
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          borderRadius: 6
+        }
+      },
+      xaxis: {
+        categories: questionBankData.subjects,
+        labels: { style: { fontSize: '11px' } }
+      },
+      legend: { position: 'top' },
+      dataLabels: { enabled: false },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return val + ' questions';
+          }
+        }
+      }
+    };
+    
+    const qbElement = document.querySelector('#question-bank-chart');
+    if (qbElement) {
+      questionBankChartInstance = new ApexCharts(qbElement, questionBankConfig);
+      questionBankChartInstance.render();
+      console.log('Question Bank Chart rendered');
+    }
+  } else {
+    console.log('Question Bank Chart skipped - no data');
+  }
+});
+
+console.log('=== ALL SCRIPTS LOADED ===');
+</script>
+</div>
+{% endblock content %}
+
+
+
+{% comment %} {% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div>
+<link type="text/css" rel="stylesheet" href="{% static 'css/main.css' %}">
+
+<!-- HERO SECTION: Streamlined header with key metrics -->
+<section>
+  <div class="mx-auto max-w-8xl px-4 pt-8 sm:px-10 lg:px-8">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between text-gray-500">
+      <div class="max-w-3xl">
+        <div class="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-1.5 text-xs font-bold tracking-wide text-indigo-700 shadow-sm">
+          <i class='bx bx-bar-chart-alt-2'></i>
+          <span>ANALYTICS DASHBOARD</span>
+        </div>
+        <h1 class="mt-4 text-4xl font-black leading-tight sm:text-5xl text-slate-900 text-gray-700">Academic Performance Insights</h1>
+        <p class="mt-3 text-base text-slate-600 text-gray-500">Real-time analytics tracking student mastery, assessment trends, and learning outcomes across all subjects.</p>
+        
+        <div class="mt-5 inline-flex items-center gap-3 rounded-xl bg-white px-5 py-3 text-sm font-semibold border-2 border-indigo-100 shadow-lg">
+          <i class='bx bx-calendar-check text-xl text-indigo-600'></i>
+          <span class="text-slate-700">{{ active_year_label }}</span>
+        </div>
+      </div>
+
+      <!-- Compact metrics grid -->
+      <div class="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-4 shadow-md text-white">
+          <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider opacity-90">Students</p>
+          <p class="mt-2 text-4xl font-extrabold">{{ enrolled_students_count }}</p>
+        </div>
+        <i class='bx bxs-group text-3xl opacity-30'></i>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-4 shadow-md text-white">
+          <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider opacity-90">Assessments</p>
+          <p class="mt-2 text-4xl font-extrabold">{{ assessment_summaries|length }}</p>
+        </div>
+        <i class='bx bxs-file-doc text-3xl opacity-30'></i>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-4 shadow-md text-white">
+          <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider opacity-90">Avg Mastery</p>
+          <p class="mt-2 text-4xl font-extrabold">{{ overall_percentages.average|floatformat:1 }}%</p>
+        </div>
+        <i class='bx bxs-trophy text-3xl opacity-30'></i>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-4 shadow-md text-white">
+          <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider opacity-90">Subjects</p>
+          <p class="mt-2 text-4xl font-extrabold">{{ subject_data|length }}</p>
+        </div>
+        <i class='bx bxs-book text-3xl opacity-30'></i>
+          </div>
+        </div>
+      </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN ANALYTICS SECTION -->
+<section class="bg-slate-50 py-10">
+  <div class="mx-auto max-w-8xl px-4 sm:px-10 lg:px-8">
+    
+    <!-- Primary Charts Row -->
+    <div class="grid gap-6 lg:grid-cols-2 mb-6">
+      
+      <!-- Bloom's Taxonomy Performance -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 text-gray-700">Bloom's Taxonomy Mastery</h3>
+            <p class="mt-1 text-sm text-slate-600 text-gray-500">Cognitive skill levels across all assessments</p>
+          </div>
+          <select id="assessmentDropdown" class="rounded-lg border-2 border-slate-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-slate-700 shadow-sm hover:border-indigo-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all text-gray-700">
+            <option value="overall"
+                    data-remembering="{{ overall_percentages.remembering }}"
+                    data-creating="{{ overall_percentages.creating }}"
+                    data-understanding="{{ overall_percentages.understanding }}"
+                    data-applying="{{ overall_percentages.applying }}"
+                    data-analyzing="{{ overall_percentages.analyzing }}"
+                    data-evaluating="{{ overall_percentages.evaluating }}"
+                    data-average="{{ overall_percentages.average }}">
+              📊 Overall Mastery
+            </option>
+            {% for record in assessment_summaries %}
+            <option value="{{ record.id }}"
+                    data-remembering="{{ record.remembering }}"
+                    data-creating="{{ record.creating }}"
+                    data-understanding="{{ record.understanding }}"
+                    data-applying="{{ record.applying }}"
+                    data-analyzing="{{ record.analyzing }}"
+                    data-evaluating="{{ record.evaluating }}"
+                    data-average="{{ record.average }}">
+              {{ record.label }}{% if record.subject_code %} • {{ record.subject_code }}{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div id="bar-chart" class="h-[380px] w-full"></div>
+      </div>
+
+      <!-- Restricted Questions Distribution -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 text-gray-700">Question Review Status</h3>
+            <p class="mt-1 text-sm text-slate-600 text-gray-500">Distribution of restricted items by Bloom level</p>
+          </div>
+          <div class="text-sm font-bold text-amber-700 bg-amber-50 px-4 py-2 rounded-lg border-2 border-amber-200 text-gray-700">
+            {{ restricted_counts }} Pending
+          </div>
+        </div>
+        <div class="flex items-center justify-center h-[340px]">
+          <div class="w-full max-w-sm h-full">
+            <canvas id="chartDoughnut"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Analytics Row -->
+    <div class="grid gap-6 lg:grid-cols-3 mb-6">
+      
+      <!-- Performance Trend Line Chart -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Mastery Trend</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Performance trajectory across cognitive levels</p>
+        </div>
+        <div id="line-chart" class="h-[280px] w-full"></div>
+      </div>
+
+      <!-- Radar Chart for Bloom's Dimensions -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Cognitive Profile</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Multi-dimensional skill assessment</p>
+        </div>
+        <div id="radar-chart" class="h-[280px] w-full"></div>
+      </div>
+
+      <!-- Subject Performance Chart -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Subject Performance</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Comparative mastery by subject area</p>
+        </div>
+        <div id="subject-chart" class="h-[280px] w-full"></div>
+      </div>
+    </div>
+
+    <!-- Additional Analytics Row -->
+    <div class="grid gap-6 lg:grid-cols-2 mb-6">
+      
+      <!-- Restricted Items by Subject -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Restricted Items by Subject</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Top subjects with pending review items</p>
+        </div>
+        <div id="restricted-subject-chart" class="h-[300px] w-full"></div>
+      </div>
+
+      <!-- Subject Performance Comparison -->
+      <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="mb-6">
+          <h3 class="text-xl font-bold text-slate-900 text-gray-700">Top Subject Performers</h3>
+          <p class="mt-1 text-sm text-slate-600 text-gray-500">Highest performing subjects by correct answer rate</p>
+        </div>
+        <div id="subject-comparison-chart" class="h-[300px] w-full"></div>
+      </div>
+    </div>
+
+    <!-- Insights & Data Tables Row -->
+    <div class="grid gap-6 lg:grid-cols-3">
+      
+      <!-- Top Performers -->
+      <div class="lg:col-span-2 rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 text-gray-700">Top Performing Assessments</h3>
+            <p class="mt-1 text-sm text-slate-600 text-gray-500">Highest mastery scores across all subjects</p>
+          </div>
+          <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 border-2 border-emerald-200 text-gray-700">
+            <i class='bx bxs-star'></i>
+            {{ assessment_highlights|length }} Highlighted
+          </span>
+        </div>
+        
+        <div class="overflow-hidden rounded-xl border-2 border-slate-100">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-gradient-to-r from-slate-50 to-slate-100 text-xs uppercase tracking-wider text-slate-700 font-bold text-gray-700">
+              <tr>
+                <th class="px-5 py-4">Assessment</th>
+                <th class="px-5 py-4">Subject</th>
+                <th class="px-5 py-4 text-right">Mastery Score</th>
+                <th class="px-5 py-4 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-gray-500">
+              {% if assessment_highlights %}
+                {% for record in assessment_highlights %}
+                <tr class="hover:bg-indigo-50/50 transition-colors">
+                  <td class="px-5 py-4 font-semibold text-slate-800">{{ record.label }}</td>
+                  <td class="px-5 py-4 text-slate-600 text-gray-500">{{ record.subject_code|default:'—' }}</td>
+                  <td class="px-5 py-4 text-right">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-700">
+                      <i class='bx bxs-badge-check'></i>
+                      {{ record.average|floatformat:1 }}%
+                    </span>
+                  </td>
+                  <td class="px-5 py-4 text-center">
+                    {% if record.average >= 80 %}
+                      <i class='bx bxs-up-arrow text-emerald-600 text-lg'></i>
+                    {% elif record.average >= 60 %}
+                      <i class='bx bx-right-arrow text-amber-600 text-lg'></i>
+                    {% else %}
+                      <i class='bx bxs-down-arrow text-red-600 text-lg'></i>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500">
+                    <i class='bx bx-info-circle text-3xl mb-2'></i>
+                    <p>No assessment highlights available</p>
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quick Stats Panel -->
+      <div class="space-y-6">
+        <!-- Mastery Gauge -->
+        <div class="rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 shadow-lg text-white">
+          <h3 class="text-lg font-bold opacity-90">Overall Mastery</h3>
+          <div class="mt-4 flex items-center justify-center">
+            <div class="relative">
+              <svg class="w-32 h-32 transform -rotate-90">
+                <circle cx="64" cy="64" r="56" stroke="rgba(255,255,255,0.2)" stroke-width="8" fill="none"/>
+                <circle cx="64" cy="64" r="56" stroke="white" stroke-width="8" fill="none"
+                        stroke-dasharray="351.86"
+                        stroke-linecap="round"
+                        style="stroke-dashoffset: calc(351.86 - (351.86 * {{ overall_percentages.average|floatformat:0 }}) / 100)"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-3xl font-black">{{ overall_percentages.average|floatformat:0 }}%</span>
+              </div>
+            </div>
+          </div>
+          <p class="mt-3 text-center text-sm opacity-90">Across all Bloom levels</p>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200 text-gray-700">
+          <h3 class="text-lg font-bold text-slate-900 mb-4">Key Metrics</h3>
+          <dl class="space-y-3">
+            <div class="flex items-center justify-between rounded-lg bg-blue-50 p-3 border-2 border-blue-100">
+              <dt class="text-sm font-semibold text-slate-700">Questions</dt>
+              <dd class="text-lg font-bold text-blue-700">{{ total }}</dd>
+            </div>
+            <div class="flex items-center justify-between rounded-lg bg-amber-50 p-3 border-2 border-amber-100">
+              <dt class="text-sm font-semibold text-slate-700">Restricted</dt>
+              <dd class="text-lg font-bold text-amber-700">{{ restricted_counts }}</dd>
+            </div>
+            <div class="flex items-center justify-between rounded-lg bg-purple-50 p-3 border-2 border-purple-100">
+              <dt class="text-sm font-semibold text-slate-700">Restriction Rate</dt>
+              <dd class="text-lg font-bold text-purple-700">{{ restricted_percentage|floatformat:1 }}%</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Top Subject Highlights -->
+        <div class="rounded-2xl bg-white p-6 shadow-lg border border-slate-200">
+          <h3 class="text-lg font-bold text-slate-900 mb-4 text-gray-700">Top Subjects</h3>
+          <div class="space-y-3">
+            {% for subject in subject_highlights %}
+            <div class="flex items-center justify-between rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 p-3 border border-indigo-100">
+              <div class="flex items-center gap-2">
+                <i class='bx bxs-book-bookmark text-indigo-600'></i>
+                <span class="text-sm font-semibold text-slate-700">{{ subject.subject_code }}</span>
+              </div>
+              <span class="text-sm font-bold text-indigo-700">{{ subject.percentage|floatformat:1 }}%</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+{{ bloom_labels|json_script:"bloom-labels" }}
+{{ bloom_data|json_script:"bloom-data" }}
+{{ subject_codes|json_script:"subject-codes" }}
+{{ subject_percentages|json_script:"subject-percentages" }}
+
+<script>
+// Parse backend data
+const bloomLabels = JSON.parse(document.getElementById('bloom-labels').textContent || '[]');
+const bloomData = JSON.parse(document.getElementById('bloom-data').textContent || '[]');
+const subjectCodes = JSON.parse(document.getElementById('subject-codes').textContent || '[]');
+const subjectPercentages = JSON.parse(document.getElementById('subject-percentages').textContent || '[]');
+
+// Restricted subject breakdown data
+const restrictedSubjectData = [
+  {% for item in restricted_subject_breakdown %}
+    { subject: '{{ item.subject_code }}', total: {{ item.total }} },
+  {% endfor %}
+];
+
+// Doughnut Chart for Restricted Distribution
+const doughnutConfig = {
+  type: 'doughnut',
+  data: {
+    labels: bloomLabels,
+    datasets: [{
+      label: 'Restricted Questions',
+      data: bloomData,
+      backgroundColor: ['#4f46e5','#7c3aed','#2563eb','#06b6d4','#10b981','#f59e0b'],
+      borderWidth: 3,
+      borderColor: '#fff',
+      hoverOffset: 8,
+    }],
+  },
+  options: {
+    plugins: {
+      legend: { 
+        position: 'bottom', 
+        labels: { 
+          color: '#0f172a', 
+          font: { size: 13, weight: '600' },
+          padding: 15
+        } 
+      },
+      tooltip: { 
+        enabled: true,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        padding: 12,
+        titleFont: { size: 14, weight: 'bold' },
+        bodyFont: { size: 13 },
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = context.parsed || 0;
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+            return `${label}: ${value} (${percentage}%)`;
+          }
+        }
+      }
+    },
+    maintainAspectRatio: true,
+    responsive: true,
+  },
+};
+
+const doughnutCanvas = document.getElementById('chartDoughnut');
+if (doughnutCanvas) new Chart(doughnutCanvas, doughnutConfig);
+
+// ApexCharts
+document.addEventListener('DOMContentLoaded', function () {
+  let chartInstance, lineChartInstance, radarChartInstance, subjectChartInstance;
+  let restrictedSubjectChartInstance, subjectComparisonChartInstance;
+
+  // Bar Chart Configuration
+  const chartConfig = {
+    series: [],
+    chart: { 
+      type: 'bar', 
+      height: 380, 
+      toolbar: { show: false },
+      animations: { enabled: true, speed: 800 }
+    },
+    dataLabels: { enabled: false },
+    colors: ['#4f46e5'],
+    plotOptions: { 
+      bar: { 
+        columnWidth: '50%', 
+        borderRadius: 8,
+        distributed: false,
+        dataLabels: { position: 'top' }
+      } 
+    },
+    xaxis: {
+      categories: ['Remember','Create','Understand','Apply','Analyze','Evaluate','Average'],
+      labels: { 
+        style: { colors: '#0f172a', fontSize: '12px', fontWeight: 600 },
+        rotate: -45,
+        rotateAlways: false
+      },
+    },
+    yaxis: { 
+      labels: { 
+        style: { colors: '#0f172a', fontSize: '12px', fontWeight: 600 },
+        formatter: (val) => val.toFixed(0) + '%'
+      }, 
+      max: 100 
+    },
+    grid: { 
+      borderColor: '#e2e8f0', 
+      strokeDashArray: 4,
+      padding: { top: 10, right: 20, left: 10 }
+    },
+    tooltip: { 
+      theme: 'light',
+      y: { formatter: (val) => val.toFixed(2) + '%' }
+    }
+  };
+
+  // Line Chart Configuration
+  const lineChartConfig = {
+    series: [{
+      name: 'Mastery %',
+      data: []
+    }],
+    chart: {
+      type: 'line',
+      height: 280,
+      toolbar: { show: false },
+      animations: { enabled: true }
+    },
+    stroke: { 
+      curve: 'smooth',
+      width: 3
+    },
+    colors: ['#10b981'],
+    markers: {
+      size: 5,
+      colors: ['#10b981'],
+      strokeColors: '#fff',
+      strokeWidth: 2,
+      hover: { size: 7 }
+    },
+    xaxis: {
+      categories: ['Remember','Create','Understand','Apply','Analyze','Evaluate'],
+      labels: { 
+        style: { colors: '#0f172a', fontSize: '11px', fontWeight: 600 },
+        rotate: -45
+      }
+    },
+    yaxis: {
+      max: 100,
+      labels: {
+        formatter: (val) => val.toFixed(0) + '%',
+        style: { colors: '#0f172a', fontSize: '11px', fontWeight: 600 }
+      }
+    },
+    grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+    tooltip: {
+      y: { formatter: (val) => val.toFixed(2) + '%' }
+    }
+  };
+
+  // Radar Chart Configuration
+  const radarChartConfig = {
+    series: [{
+      name: 'Mastery Level',
+      data: []
+    }],
+    chart: {
+      type: 'radar',
+      height: 280,
+      toolbar: { show: false }
+    },
+    colors: ['#7c3aed'],
+    markers: {
+      size: 4,
+      colors: ['#7c3aed'],
+      strokeColors: '#fff',
+      strokeWidth: 2
+    },
+    fill: {
+      opacity: 0.2
+    },
+    stroke: {
+      show: true,
+      width: 2,
+      colors: ['#7c3aed']
+    },
+    xaxis: {
+      categories: ['Remember','Create','Understand','Apply','Analyze','Evaluate'],
+      labels: {
+        style: { colors: ['#0f172a'], fontSize: '11px', fontWeight: 600 }
+      }
+    },
+    yaxis: {
+      max: 100,
+      tickAmount: 4
+    },
+    tooltip: {
+      y: { formatter: (val) => val.toFixed(2) + '%' }
+    }
+  };
+
+  // Subject Performance Chart (Horizontal Bar)
+  const subjectChartConfig = {
+    series: [{
+      name: 'Correct Answer Rate',
+      data: subjectPercentages.slice(0, 8)
+    }],
+    chart: {
+      type: 'bar',
+      height: 280,
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 6,
+        horizontal: true,
+        distributed: true,
+        dataLabels: { position: 'right' }
+      }
+    },
+    colors: ['#4f46e5', '#7c3aed', '#2563eb', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'],
+    dataLabels: {
+      enabled: true,
+      formatter: (val) => val.toFixed(1) + '%',
+      offsetX: 30,
+      style: { fontSize: '11px', fontWeight: 'bold', colors: ['#fff'] }
+    },
+    xaxis: {
+      categories: subjectCodes.slice(0, 8),
+      max: 100,
+      labels: {
+        formatter: (val) => val.toFixed(0) + '%',
+        style: { fontSize: '11px', fontWeight: 600 }
+      }
+    },
+    yaxis: {
+      labels: {
+        style: { fontSize: '11px', fontWeight: 600 }
+      }
+    },
+    grid: { borderColor: '#e2e8f0' },
+    legend: { show: false },
+    tooltip: {
+      y: { formatter: (val) => val.toFixed(2) + '%' }
+    }
+  };
+
+  // Restricted Items by Subject Chart
+  const restrictedSubjectChartConfig = {
+    series: [{
+      name: 'Restricted Items',
+      data: restrictedSubjectData.map(item => item.total)
+    }],
+    chart: {
+      type: 'bar',
+      height: 300,
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 8,
+        distributed: true,
+        dataLabels: { position: 'top' }
+      }
+    },
+    colors: ['#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#6366f1'],
+    dataLabels: {
+      enabled: true,
+      formatter: (val) => val,
+      offsetY: -20,
+      style: { fontSize: '12px', fontWeight: 'bold', colors: ['#0f172a'] }
+    },
+    xaxis: {
+      categories: restrictedSubjectData.map(item => item.subject),
+      labels: {
+        style: { fontSize: '11px', fontWeight: 600 }
+      }
+    },
+    yaxis: {
+      labels: {
+        formatter: (val) => Math.round(val),
+        style: { fontSize: '11px', fontWeight: 600 }
+      }
+    },
+    grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+    legend: { show: false },
+    tooltip: {
+      y: { formatter: (val) => val + ' items' }
+    }
+  };
+
+  // Subject Comparison Chart (Top Performers)
+  const subjectComparisonConfig = {
+    series: [{
+      name: 'Performance',
+      data: subjectPercentages.slice(0, 6)
+    }],
+    chart: {
+      type: 'bar',
+      height: 300,
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 8,
+        columnWidth: '60%',
+        distributed: true
+      }
+    },
+    colors: ['#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7'],
+    dataLabels: {
+      enabled: true,
+      formatter: (val) => val.toFixed(1) + '%',
+      offsetY: -20,
+      style: { fontSize: '12px', fontWeight: 'bold', colors: ['#0f172a'] }
+    },
+    xaxis: {
+      categories: subjectCodes.slice(0, 6),
+      labels: {
+        style: { fontSize: '11px', fontWeight: 600 }
+      }
+    },
+    yaxis: {
+      max: 100,
+      labels: {
+        formatter: (val) => val.toFixed(0) + '%',
+        style: { fontSize: '11px', fontWeight: 600 }
+      }
+    },
+    grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+    legend: { show: false },
+    tooltip: {
+      y: { formatter: (val) => val.toFixed(2) + '%' }
+    }
+  };
+
+  function updateCharts(assessmentId) {
+    const option = document.querySelector(`#assessmentDropdown option[value='${assessmentId}']`);
+    if (!option) return;
+
+    const dataPoints = [
+      parseFloat(option.dataset.remembering) || 0,
+      parseFloat(option.dataset.creating) || 0,
+      parseFloat(option.dataset.understanding) || 0,
+      parseFloat(option.dataset.applying) || 0,
+      parseFloat(option.dataset.analyzing) || 0,
+      parseFloat(option.dataset.evaluating) || 0,
+      parseFloat(option.dataset.average) || 0,
+    ].map((v) => Number((v || 0).toFixed(2)));
+
+    const bloomDataPoints = dataPoints.slice(0, 6);
+
+    // Update Bar Chart
+    if (chartInstance) {
+      chartInstance.updateSeries([{ name: 'Mastery %', data: dataPoints }]);
+    } else {
+      chartConfig.series = [{ name: 'Mastery %', data: dataPoints }];
+      chartInstance = new ApexCharts(document.querySelector('#bar-chart'), chartConfig);
+      chartInstance.render();
+    }
+
+    // Update Line Chart
+    if (lineChartInstance) {
+      lineChartInstance.updateSeries([{ name: 'Mastery %', data: bloomDataPoints }]);
+    } else {
+      lineChartConfig.series = [{ name: 'Mastery %', data: bloomDataPoints }];
+      lineChartInstance = new ApexCharts(document.querySelector('#line-chart'), lineChartConfig);
+      lineChartInstance.render();
+    }
+
+    // Update Radar Chart
+    if (radarChartInstance) {
+      radarChartInstance.updateSeries([{ name: 'Mastery Level', data: bloomDataPoints }]);
+    } else {
+      radarChartConfig.series = [{ name: 'Mastery Level', data: bloomDataPoints }];
+      radarChartInstance = new ApexCharts(document.querySelector('#radar-chart'), radarChartConfig);
+      radarChartInstance.render();
+    }
+  }
+
+  // Initialize Subject Performance Chart
+  if (document.querySelector('#subject-chart') && subjectCodes.length > 0) {
+    subjectChartInstance = new ApexCharts(document.querySelector('#subject-chart'), subjectChartConfig);
+    subjectChartInstance.render();
+  }
+
+  // Initialize Restricted Subject Chart
+  if (document.querySelector('#restricted-subject-chart') && restrictedSubjectData.length > 0) {
+    restrictedSubjectChartInstance = new ApexCharts(document.querySelector('#restricted-subject-chart'), restrictedSubjectChartConfig);
+    restrictedSubjectChartInstance.render();
+  }
+
+  // Initialize Subject Comparison Chart
+  if (document.querySelector('#subject-comparison-chart') && subjectCodes.length > 0) {
+    subjectComparisonChartInstance = new ApexCharts(document.querySelector('#subject-comparison-chart'), subjectComparisonConfig);
+    subjectComparisonChartInstance.render();
+  }
+
+  // Handle dropdown changes
+  const dropdown = document.getElementById('assessmentDropdown');
+  if (dropdown) {
+    dropdown.addEventListener('change', () => updateCharts(dropdown.value));
+    updateCharts(dropdown.value);
+  }
+});
+</script>
+</div>
+{% endblock content %} {% endcomment %}
+
